@@ -8,18 +8,30 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
-class KafkaService implements Closeable {
-    private final KafkaConsumer<String, String> consumer;
+class KafkaService<T> implements Closeable {
+    private final KafkaConsumer<String, T> consumer;
     private final ConsumerFuncion parse;
 
-    KafkaService(String groupId, String topic, ConsumerFuncion parse) {
-        this.consumer = new KafkaConsumer<String, String>(properties(groupId));
-        this.parse = parse;
+    KafkaService(String groupId, String topic, ConsumerFuncion parse, Class<T> type, Map<String, String> properties) {
+        this(parse, groupId, type, properties);
 
         consumer.subscribe(Collections.singleton(topic));
+    }
+
+    public KafkaService(String groupId, Pattern compile, ConsumerFuncion parse, Class<T> type, Map<String, String> properties) {
+        this(parse, groupId, type, properties);
+
+        consumer.subscribe(compile);
+    }
+
+    private KafkaService(ConsumerFuncion<T> parse, String groupId, Class<T> type, Map<String, String> props) {
+        this.parse = parse;
+        this.consumer = new KafkaConsumer<>(properties(type, groupId, props));
     }
 
     void run() {
@@ -34,13 +46,16 @@ class KafkaService implements Closeable {
         }
     }
 
-    private static Properties properties(String groupId) {
+    private Properties properties(Class<T> type,String groupId, Map<String, String> overrideProps) {
         var properties = new Properties();
         properties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         properties.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
-        properties.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+        properties.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, GsonDeserializer.class.getName());
         properties.setProperty(ConsumerConfig.CLIENT_ID_CONFIG, UUID.randomUUID().toString());
         properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, groupId);
+        properties.setProperty(GsonDeserializer.TYPE_CONFIG, type.getName());
+
+        properties.putAll(overrideProps);
         return properties;
     }
 
