@@ -3,8 +3,9 @@ package br.com.alura.ecommerce;
 import java.math.BigDecimal;
 
 public class Order {
-    private final String orderId, email;
+    private final String orderId;
     private final BigDecimal value;
+    private final String email;
 
     public Order(String orderId, BigDecimal value, String email) {
         this.orderId = orderId;
@@ -12,20 +13,7 @@ public class Order {
         this.email = email;
     }
 
-    public BigDecimal getValue() {
-        return value;
-    }
-
     public String getEmail() {
         return this.email;
-    }
-
-    @Override
-    public String toString() {
-        return "Order{" +
-                "orderId='" + orderId + '\'' +
-                ", email='" + email + '\'' +
-                ", value=" + value +
-                '}';
     }
 }
